@@ -21,6 +21,7 @@ Plug 'myusuf3/numbers.vim'
 Plug 'preservim/nerdcommenter'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
+Plug 'folke/tokyonight.nvim', { 'branch': 'main' }
 Plug 'rstacruz/vim-closer'
 Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': ['markdown', 'vim-plug']}
 Plug 'lukas-reineke/indent-blankline.nvim'
@@ -30,12 +31,19 @@ Plug 'nvim-treesitter/nvim-treesitter'
 Plug 'nvim-orgmode/orgmode'
 Plug 'rust-lang/rust.vim'
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+Plug 'andymass/vim-matchup'
+Plug 'nvim-lua/plenary.nvim'
+Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.1' }
+Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
 
 call plug#end()
 
 " rust-lang
 syntax enable
 filetype plugin indent on
+
+" colorscheme
+colorscheme tokyonight-moon
 
 " Chinese character
 set fileencodings=utf8,cp936,gb18030,big5
@@ -56,6 +64,12 @@ nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
+
+" quickly resize windows
+nnoremap + <C-w>+
+nnoremap - <C-w>-
+nnoremap < <C-w><
+nnoremap > <C-w>>
 
 " Copy to clipboard
 vnoremap  <leader>y  "+y
@@ -113,7 +127,11 @@ noremap <leader>0 :tablast<cr>
 " <c-d> to delete a line
 inoremap <C-d> <Esc>ddi
 
-" vim grep word
+" Find files using Telescope command-line sugar.
+nnoremap <leader>sf <cmd>Telescope find_files<cr>
+nnoremap <leader>sg <cmd>Telescope live_grep<cr>
+nnoremap <leader>sb <cmd>Telescope buffers<cr>
+nnoremap <leader>sh <cmd>Telescope help_tags<cr>
 
 " }}}
 
@@ -195,5 +213,26 @@ require('orgmode').setup({
   org_agenda_files = {'~/Dropbox/org/*', '~/my-orgs/**/*'},
   org_default_notes_file = '~/Dropbox/org/refile.org',
 })
+EOF
+" }}}
+
+" lua scripts for telescope-fzf-native ---------------------- {{{
+lua << EOF
+-- You dont need to set any of these options. These are the default ones. Only
+-- the loading is important
+require('telescope').setup {
+  extensions = {
+    fzf = {
+      fuzzy = true,                    -- false will only do exact matching
+      override_generic_sorter = true,  -- override the generic sorter
+      override_file_sorter = true,     -- override the file sorter
+      case_mode = "smart_case",        -- or "ignore_case" or "respect_case"
+                                       -- the default case_mode is "smart_case"
+    }
+  }
+}
+-- To get fzf loaded and working with telescope, you need to call
+-- load_extension, somewhere after setup function:
+require('telescope').load_extension('fzf')
 EOF
 " }}}
