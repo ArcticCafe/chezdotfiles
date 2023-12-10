@@ -35,6 +35,12 @@ Plug 'andymass/vim-matchup'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim', { 'tag': '0.1.1' }
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build' }
+Plug 'tpope/vim-fugitive'
+Plug 'christoomey/vim-tmux-navigator'
+Plug 'tpope/vim-surround'
+Plug 'szw/vim-maximizer'
+Plug 'nvim-tree/nvim-web-devicons'
+Plug 'neovim/nvim-lspconfig'
 
 call plug#end()
 
@@ -133,6 +139,9 @@ nnoremap <leader>sg <cmd>Telescope live_grep<cr>
 nnoremap <leader>sb <cmd>Telescope buffers<cr>
 nnoremap <leader>sh <cmd>Telescope help_tags<cr>
 
+" vim-maximizer
+nnoremap <C-m> :MaximizerToggle<CR>
+
 " }}}
 
 " Vimscript file settings ---------------------- {{{
@@ -146,10 +155,10 @@ augroup END
 lua << EOF
 require'nvim-treesitter.configs'.setup {
   -- A list of parser names, or "all" (the four listed parsers should always be installed)
-  ensure_installed = { "c", "lua", "vim", "help" },
+  ensure_installed = { "c", "lua", "vim", "help", "rust" },
 
   -- Install parsers synchronously (only applied to `ensure_installed`)
-  sync_install = false,
+  sync_install = true,
 
   -- Automatically install missing parsers when entering buffer
   -- Recommendation: set to false if you don't have `tree-sitter` CLI installed locally
@@ -169,15 +178,15 @@ require'nvim-treesitter.configs'.setup {
     -- disable highlighting for the `tex` filetype, you need to include `latex` in this list as this is
     -- the name of the parser)
     -- list of language that will be disabled
-    disable = { "c", "rust" },
+    -- disable = { "c", "rust" },
     -- Or use a function for more flexibility, e.g. to disable slow treesitter highlight for large files
-    disable = function(lang, buf)
-        local max_filesize = 100 * 1024 -- 100 KB
-        local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
-        if ok and stats and stats.size > max_filesize then
-            return true
-        end
-    end,
+    --disable = function(lang, buf)
+    --    local max_filesize = 100 * 1024 -- 100 KB
+    --    local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
+    --    if ok and stats and stats.size > max_filesize then
+    --        return true
+    --    end
+    --end,
 
     -- Setting this to true will run `:h syntax` and tree-sitter at the same time.
     -- Set this to `true` if you depend on 'syntax' being enabled (like for indentation).
@@ -210,8 +219,8 @@ require('nvim-treesitter.configs').setup {
 }
 
 require('orgmode').setup({
-  org_agenda_files = {'~/Dropbox/org/*', '~/my-orgs/**/*'},
-  org_default_notes_file = '~/Dropbox/org/refile.org',
+  org_agenda_files = {'~/org/*'},
+  org_default_notes_file = '~/playground/org-test/refile.org',
 })
 EOF
 " }}}
@@ -234,5 +243,12 @@ require('telescope').setup {
 -- To get fzf loaded and working with telescope, you need to call
 -- load_extension, somewhere after setup function:
 require('telescope').load_extension('fzf')
+EOF
+" }}}
+
+
+" lua scripts for telescope-fzf-native ---------------------- {{{
+lua << EOF
+require'lspconfig'.pyright.setup{}
 EOF
 " }}}
