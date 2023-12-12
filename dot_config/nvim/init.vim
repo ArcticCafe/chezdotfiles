@@ -41,8 +41,42 @@ Plug 'tpope/vim-surround'
 Plug 'szw/vim-maximizer'
 Plug 'nvim-tree/nvim-web-devicons'
 Plug 'neovim/nvim-lspconfig'
+Plug 'hrsh7th/cmp-nvim-lsp'
+Plug 'hrsh7th/cmp-buffer'
+Plug 'hrsh7th/cmp-path'
+Plug 'hrsh7th/cmp-cmdline'
+Plug 'hrsh7th/nvim-cmp'
+Plug 'L3MON4D3/LuaSnip'
+Plug 'saadparwaiz1/cmp_luasnip'
+Plug 'mfussenegger/nvim-dap'
+Plug 'mfussenegger/nvim-dap-python'
+Plug 'michaelb/sniprun', {'do': 'sh install.sh'}
+Plug 'nvim-lualine/lualine.nvim'
+" If you want to have icons in your statusline choose one of these
+Plug 'nvim-tree/nvim-web-devicons'
+Plug 'daltonmenezes/aura-theme', { 'rtp': 'packages/neovim' }
 
 call plug#end()
+
+" neovide
+if exists("g:neovide")
+
+let g:neovide_scale_factor = 1.25
+
+" transparency
+" g:neovide_transparency should be 0 if you want to unify transparency of content and title bar.
+let g:neovide_transparency = 0.0
+let g:transparency = 0.8
+let g:neovide_background_color = '#0f1117'.printf('%x', float2nr(255 * g:transparency))
+
+
+endif
+
+
+
+
+" aura-theme
+colorscheme aura-dark
 
 " rust-lang
 syntax enable
@@ -63,6 +97,9 @@ set clipboard=
 
 " change the air-line-theme
 let g:airline_theme='deus'
+
+" dap for python
+lua require('dap-python').setup('~/.virtualenvs/debugpy/bin/python3')
 
 " mappings ---------------------- {{{
 " focus movement
@@ -142,6 +179,11 @@ nnoremap <leader>sh <cmd>Telescope help_tags<cr>
 " vim-maximizer
 nnoremap <C-m> :MaximizerToggle<CR>
 
+" snip_runner
+nnoremap <leader>r :SnipRun<cr>
+nnoremap <leader>c :SnipClose<cr>
+nnoremap <leader>r :SnipReset<cr>
+
 " }}}
 
 " Vimscript file settings ---------------------- {{{
@@ -149,6 +191,73 @@ augroup filetype_vim
     autocmd!
     autocmd FileType vim setlocal foldmethod=marker 
 augroup END
+" }}}
+
+" lualine settings ---------------------- {{{
+lua << EOF
+-- Bubbles config for lualine
+-- Author: lokesh-krishna
+-- MIT license, see LICENSE for more details.
+
+-- stylua: ignore
+local colors = {
+  blue   = '#80a0ff',
+  cyan   = '#79dac8',
+  black  = '#080808',
+  white  = '#c6c6c6',
+  red    = '#ff5189',
+  violet = '#d183e8',
+  grey   = '#303030',
+}
+
+local bubbles_theme = {
+  normal = {
+    a = { fg = colors.black, bg = colors.violet },
+    b = { fg = colors.white, bg = colors.grey },
+    c = { fg = colors.black, bg = colors.black },
+  },
+
+  insert = { a = { fg = colors.black, bg = colors.blue } },
+  visual = { a = { fg = colors.black, bg = colors.cyan } },
+  replace = { a = { fg = colors.black, bg = colors.red } },
+
+  inactive = {
+    a = { fg = colors.white, bg = colors.black },
+    b = { fg = colors.white, bg = colors.black },
+    c = { fg = colors.black, bg = colors.black },
+  },
+}
+
+require('lualine').setup {
+  options = {
+    theme = bubbles_theme,
+    component_separators = '|',
+    section_separators = { left = '', right = '' },
+  },
+  sections = {
+    lualine_a = {
+      { 'mode', separator = { left = '' }, right_padding = 2 },
+    },
+    lualine_b = { 'filename', 'branch' },
+    lualine_c = { 'fileformat' },
+    lualine_x = {},
+    lualine_y = { 'filetype', 'progress' },
+    lualine_z = {
+      { 'location', separator = { right = '' }, left_padding = 2 },
+    },
+  },
+  inactive_sections = {
+    lualine_a = { 'filename' },
+    lualine_b = {},
+    lualine_c = {},
+    lualine_x = {},
+    lualine_y = {},
+    lualine_z = { 'location' },
+  },
+  tabline = {},
+  extensions = {},
+}
+EOF
 " }}}
 
 " lua scripts for treesitter ---------------------- {{{
@@ -247,8 +356,72 @@ EOF
 " }}}
 
 
-" lua scripts for telescope-fzf-native ---------------------- {{{
+" lua scripts for lsp ---------------------- {{{
 lua << EOF
 require'lspconfig'.pyright.setup{}
+EOF
+" }}}
+
+
+" lua scripts for lsp-autocompletion ---------------------- {{{
+lua << EOF
+-- Add additional capabilities supported by nvim-cmp
+local capabilities = require("cmp_nvim_lsp").default_capabilities()
+
+local lspconfig = require('lspconfig')
+
+-- Enable some language servers with the additional completion capabilities offered by nvim-cmp
+local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver' }
+for _, lsp in ipairs(servers) do
+  lspconfig[lsp].setup {
+    -- on_attach = my_custom_on_attach,
+    capabilities = capabilities,
+  }
+end
+
+-- luasnip setup
+local luasnip = require 'luasnip'
+
+-- nvim-cmp setup
+local cmp = require 'cmp'
+cmp.setup {
+  snippet = {
+    expand = function(args)
+      luasnip.lsp_expand(args.body)
+    end,
+  },
+  mapping = cmp.mapping.preset.insert({
+    ['<C-u>'] = cmp.mapping.scroll_docs(-4), -- Up
+    ['<C-d>'] = cmp.mapping.scroll_docs(4), -- Down
+    -- C-b (back) C-f (forward) for snippet placeholder navigation.
+    ['<C-Space>'] = cmp.mapping.complete(),
+    ['<CR>'] = cmp.mapping.confirm {
+      behavior = cmp.ConfirmBehavior.Replace,
+      select = true,
+    },
+    ['<Tab>'] = cmp.mapping(function(fallback)
+      if cmp.visible() then
+        cmp.select_next_item()
+      elseif luasnip.expand_or_jumpable() then
+        luasnip.expand_or_jump()
+      else
+        fallback()
+      end
+    end, { 'i', 's' }),
+    ['<S-Tab>'] = cmp.mapping(function(fallback)
+      if cmp.visible() then
+        cmp.select_prev_item()
+      elseif luasnip.jumpable(-1) then
+        luasnip.jump(-1)
+      else
+        fallback()
+      end
+    end, { 'i', 's' }),
+  }),
+  sources = {
+    { name = 'nvim_lsp' },
+    { name = 'luasnip' },
+  },
+}
 EOF
 " }}}
